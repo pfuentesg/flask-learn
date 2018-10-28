@@ -1,3 +1,7 @@
+from flask_restful import Resource, reqparse
+from flask_jwt import jwt_required
+import sqlite3
+
 class Item(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('price',
@@ -7,8 +11,17 @@ class Item(Resource):
 )
     @jwt_required()
     def get(self, name):
-        item = next(filter(lambda x: x['name']==name, items), None)
-        return {'item': item}, 200 if item else 404
+        connection = sqlite3.connect("holi.db")
+        cursor = connection.cursor()
+
+        query = "SELECt * FROM items WHERE name=?"
+        result = cursor.execute(query, (name,))
+        row = result.fetchone()
+        connection.close()
+        if row:
+            return {'item': {'name': row[0], 'price': row[1]}}
+        return {"message": "not found"}, 404
+
 
     @jwt_required()
     def delete(self, name):
@@ -42,13 +55,22 @@ class Items(Resource):
 )
     @jwt_required()
     def get(self):
-        return {'items:': items}
+        connection = sqlite3.connect("holi.db")
+        cursor = connection.cursor()
 
-    @jwt_required()
+        query = "SELECt * FROM items"
+        result = cursor.execute(query)
+        row = result.fetchone()
+        connection.close()
+        if row:
+            return row
+        return {"message": "not found"}, 404
+
     def post(self):
         data = Items.parser.parse_args()
-        if  next(filter(lambda x: x['name']==data['name'], items), None):
-            return{'message': 'item already exists'}, 400
-        item = {'name': data['name'], 'price': data['price']}
-        items.append(item)
-        return item, 201
+        connection = sqlite3.connect('holi.db')
+        cursor = connection.cursor()
+        query = "INSERT INTO items VALUES(?, ?)"
+        cursor.execute(query, (data['name'], data['price']))
+
+        return {"message':"Ok"}, 201
