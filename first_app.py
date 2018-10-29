@@ -51,6 +51,7 @@ def get_item_in_store(name):
         if store['name'] == name:
             return jsonify(store['items'])
     return jsonify({'message': 'not found'})
-
+if __name__==___main__:
+    
 app.run(port=3030)
 

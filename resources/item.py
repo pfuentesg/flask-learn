@@ -11,17 +11,22 @@ class Item(Resource):
 )
     @jwt_required()
     def get(self, name):
+        item = self.get_by_name(name)
+        if item:
+            return item
+        return {"message": "not found"}, 404
+    @classmethod
+    def get_by_name(cls, name):
         connection = sqlite3.connect("holi.db")
         cursor = connection.cursor()
 
         query = "SELECt * FROM items WHERE name=?"
         result = cursor.execute(query, (name,))
         row = result.fetchone()
+        print(row, query, name)
         connection.close()
         if row:
             return {'item': {'name': row[0], 'price': row[1]}}
-        return {"message": "not found"}, 404
-
 
     @jwt_required()
     def delete(self, name):
@@ -68,9 +73,12 @@ class Items(Resource):
 
     def post(self):
         data = Items.parser.parse_args()
+        item = Item.get_by_name(data['name'])
+        if item:
+            print ('holi')
+            return {"message": "item already exists"}, 400
         connection = sqlite3.connect('holi.db')
         cursor = connection.cursor()
         query = "INSERT INTO items VALUES(?, ?)"
         cursor.execute(query, (data['name'], data['price']))
-
-        return {"message':"Ok"}, 201
+        return {"message":"Ok"}, 201
