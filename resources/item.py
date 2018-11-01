@@ -1,5 +1,6 @@
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
+from models.item import ItemModel
 import sqlite3
 
 class Item(Resource):
@@ -9,42 +10,30 @@ class Item(Resource):
     required=True,
     help="This field cannot be left blank!"
 )
-    @jwt_required()
     def get(self, name):
-        item = self.get_by_name(name)
+        item = ItemModel.find_by_name(name)
         if item:
-            return item
+            return item.json()
         return {"message": "not found"}, 404
-    @classmethod
-    def get_by_name(cls, name):
-        connection = sqlite3.connect("holi.db")
-        cursor = connection.cursor()
 
-        query = "SELECt * FROM items WHERE name=?"
-        result = cursor.execute(query, (name,))
-        row = result.fetchone()
-        print(row, query, name)
-        connection.close()
-        if row:
-            return {'item': {'name': row[0], 'price': row[1]}}
-
-    @jwt_required()
     def delete(self, name):
-        global items
-        items = list(filter(lambda x: x['name'] != name, items))
-        return {'message': 'Item deleted'}
+        item = ItemModel.find_by_name(name)
+        if item:
+            item.delete_from_db()
+            return {'messaje': 'item deleted'}
+        return {'error': 'error removing item'}
 
-    @jwt_required()
     def put(self, name):
         data = Item.parser.parse_args()
-        # Once again, print something not in the args to verify everything works
-        item = next(filter(lambda x: x['name'] == name, items), None)
+        item = ItemModel.find_by_name(name)
         if item is None:
-            item = {'name': name, 'price': data['price']}
+            item = ItemModel(data['name'], data['price'])
+
             items.append(item)
         else:
-            item.update(data)
-        return item
+            item.price = data['price']
+        item.save_to_db()
+        return item.json()
 
     
 class Items(Resource):
@@ -58,27 +47,20 @@ class Items(Resource):
     required=True,
     help="This field cannot be left blank!"
 )
-    @jwt_required()
     def get(self):
-        connection = sqlite3.connect("holi.db")
-        cursor = connection.cursor()
-
-        query = "SELECt * FROM items"
-        result = cursor.execute(query)
-        row = result.fetchone()
-        connection.close()
-        if row:
-            return row
+        items = ItemModel.find_all()
+        if items:
+            return items
         return {"message": "not found"}, 404
 
     def post(self):
         data = Items.parser.parse_args()
-        item = Item.get_by_name(data['name'])
-        if item:
-            print ('holi')
+        if ItemModel.find_by_name(data['name']):
             return {"message": "item already exists"}, 400
-        connection = sqlite3.connect('holi.db')
-        cursor = connection.cursor()
-        query = "INSERT INTO items VALUES(?, ?)"
-        cursor.execute(query, (data['name'], data['price']))
-        return {"message":"Ok"}, 201
+
+        item = ItemModel(**data)
+        try:
+            item.save_to_db()
+        except:
+            return {"message": "An error occurred inserting the item."}, 500
+        return item.json(), 201
