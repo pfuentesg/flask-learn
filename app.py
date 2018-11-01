@@ -15,6 +15,13 @@ jwt = JWT(app, authenticate, identity)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///holi.db'
 app.config['JWT_EXPIRATION_DELTA'] = timedelta(seconds=9999999999)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+
+@app.before_first_request
+def crate_tables():
+    db.create_all()
+
+
 api.add_resource(UserRegister, '/register')
 api.add_resource(Item, '/item/<string:name>')
 api.add_resource(Items, '/items')
