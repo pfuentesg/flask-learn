@@ -1,7 +1,6 @@
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
 from models.item import ItemModel
-import sqlite3
 
 class Item(Resource):
     parser = reqparse.RequestParser()
@@ -48,10 +47,8 @@ class Items(Resource):
     help="This field cannot be left blank!"
 )
     def get(self):
-        items = ItemModel.find_all()
-        if items:
-            return items
-        return {"message": "not found"}, 404
+        return {'items': list(map(lambda x: x.json(), ItemModel.query.all()))}
+
 
     def post(self):
         data = Items.parser.parse_args()
