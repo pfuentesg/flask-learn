@@ -30,4 +30,4 @@ api.add_resource(Items, '/items')
 if __name__== "__main__":
     from db import db
     db.init_app(app)
-    app.run(port=3030)
+    app.run(host='0.0.0.0')
