@@ -604,3 +604,9 @@ ASALocalRun/
 
 
 # End of https://www.gitignore.io/api/flask,python,pycharm,virtualenv,visualstudio
+
+#vscode directory
+.vscode
+
+#databases created in develpment process
+*.db
